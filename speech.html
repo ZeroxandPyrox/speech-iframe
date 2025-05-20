@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reconocimiento de Voz</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #estado {
+      margin-top: 15px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h2>Asistente por Voz</h2>
+  <button id="startBtn">🎙️ Empezar a Hablar</button>
+  <div id="estado">Haz clic para hablar.</div>
+
+  <script>
+    let reconocimiento;
+    const estado = document.getElementById("estado");
+    const boton = document.getElementById("startBtn");
+
+    function inicializarReconocimiento() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        estado.textContent = "Tu navegador no admite reconocimiento de voz.";
+        return null;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "es-ES";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        estado.textContent = "🎤 Escuchando...";
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        estado.textContent = `✔️ Entendido: "${transcript}"`;
+
+        // Enviar al sitio padre (como Wix)
+        window.parent.postMessage({
+          tipo: "texto",
+          mensaje: transcript
+        }, "*");
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Error de voz:", event.error);
+        estado.textContent = "❌ Error: " + event.error;
+        window.parent.postMessage({
+          tipo: "error",
+          mensaje: "Error de voz: " + event.error
+        }, "*");
+      };
+
+      recognition.onend = () => {
+        boton.disabled = false;
+        boton.textContent = "🎙️ Empezar a Hablar";
+      };
+
+      return recognition;
+    }
+
+    boton.addEventListener("click", () => {
+      boton.disabled = true;
+      boton.textContent = "🎤 Escuchando...";
+      reconocimiento = inicializarReconocimiento();
+      if (reconocimiento) {
+        reconocimiento.start();
+      }
+    });
+  </script>
+</body>
+</html>
